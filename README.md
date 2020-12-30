@@ -9,7 +9,7 @@ I start by preparing "object points", which will be the (x, y, z) coordinates of
 
 I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result:
 
-![calibration](output_images\calibration.jpg)
+![Camera Calibration](./output_images/calibration.jpg)
 
 I saved the camera calibration and distortion coefficients in a pickle file located in "./wide_dist_pickle.p".
 
@@ -21,7 +21,7 @@ Here is an example of distortion correction in one of the test images.
 
 I start by reading the camera calibration and distortion coefficients from a pickle file. I then applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result:
 
-![distortion](output_images\distortion.jpg)
+![Distortion Correction](./output_images/distortion.jpg)
 
 #### Binary Thresholding
 
@@ -29,7 +29,7 @@ The next step in the pipeline is to generate a thresholded binary image. This im
 
 I used a combination of color and gradient thresholds to generate a binary image. Here is an example of my output for this step:
 
-![binary](output_images\binary.jpg)
+![Binary Thresholding](./output_images/binary.jpg)
 
 Creating a great writeup:
 ---
