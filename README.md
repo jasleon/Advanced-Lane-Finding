@@ -1,7 +1,7 @@
-## Advanced Lane Finding
+# Advanced Lane Finding
 This pipeline identifies the lane boundaries in a video from a front-facing camera on a car. The algorithm processes images by applying computer vision techniques: camera calibration, distortion correction, binary thresholding, perspective transformation, and polynomial fitting.
 
-### Camera Calibration
+## 1. Camera Calibration
 
 The code of this step is contained in the second and third cell of the IPython notebook.
 
@@ -13,9 +13,9 @@ I then used the output `objpoints` and `imgpoints` to compute the camera calibra
 
 I saved the camera calibration and distortion coefficients in a pickle file located in "./wide_dist_pickle.p".
 
-### Pipeline
+## 2. Pipeline
 
-#### Distortion Correction
+### 2.1. Distortion Correction
 
 Here is an example of distortion correction in one of the test images. 
 
@@ -23,7 +23,7 @@ I start by reading the camera calibration and distortion coefficients from a pic
 
 ![Distortion Correction](./output_images/distortion.jpg)
 
-#### Binary Thresholding
+### 2.2. Binary Thresholding
 
 The next step in the pipeline is to generate a thresholded binary image. This image provides a clear visualization of the lane boundaries.
 
@@ -31,37 +31,67 @@ I used a combination of color and gradient thresholds to generate a binary image
 
 ![Binary Thresholding](./output_images/binary.jpg)
 
-Creating a great writeup:
----
+### 2.3. Perspective Transform
 
-A great writeup should include the rubric points as well as your description of how you addressed each point.  You should include a detailed description of the code used in each step (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
+The next step in the pipeline is to transform the perspective of the image as seen from above. I defined source points and destination points to calculate the matrices that would change the perspective.
 
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
+We need two matrices one to transform the perspective and the other to undo the transformation.
 
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup.
+This section of code shows the definition of the source and destination points.
 
-The Project
----
+```python
+# Four source coordinates
+src = np.array([[205, 720], 
+                [600, 445], 
+                [685, 445], 
+                [1105, 720]], dtype=np.float32)
 
-The goals / steps of this project are the following:
+# Reduce the width of the image by offset to form a rectangle
+offset = 300
 
-* Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
-* Apply a distortion correction to raw images.
-* Use color transforms, gradients, etc., to create a thresholded binary image.
-* Apply a perspective transform to rectify binary image ("birds-eye view").
-* Detect lane pixels and fit to find the lane boundary.
-* Determine the curvature of the lane and vehicle position with respect to center.
-* Warp the detected lane boundaries back onto the original image.
-* Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
+# Four destination coordinates
+dst = np.array([[offset, img.shape[0]], 
+                [offset, 0], 
+                [img.shape[1] - offset, 0], 
+                [img.shape[1] - offset, img.shape[0]]], dtype=np.float32)
+```
 
-The images for camera calibration are stored in the folder called `camera_cal`.  The images in `test_images` are for testing your pipeline on single frames.  If you want to extract more test images from the videos, you can simply use an image writing method like `cv2.imwrite()`, i.e., you can read the video in frame by frame as usual, and for frames you want to save for later you can write to an image file.  
+I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
 
-To help the reviewer examine your work, please save examples of the output from each stage of your pipeline in the folder called `output_images`, and include a description in your writeup for the project of what each image shows.    The video called `project_video.mp4` is the video your pipeline should work well on.  
+![perspective](output_images/perspective.jpg)
 
-The `challenge_video.mp4` video is an extra (and optional) challenge for you if you want to test your pipeline under somewhat trickier conditions.  The `harder_challenge.mp4` video is another optional challenge and is brutal!
+### 2.4. Lane Boundaries Identification
 
-If you're feeling ambitious (again, totally optional though), don't stop there!  We encourage you to go out and take video of your own, calibrate your camera and show us how you would implement this project from scratch!
+I used a sliding windows algorithm to determine the pixels corresponding to the left and right lane lines. I first took the histogram of the bottom half of the image to find the starting point of the left and right lines. Then I defined windows around the starting point to search for other pixels corresponding to the line. 
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+### 2.5. Polynomial Fitting
 
+I then used the pixels from each line to fit a second order polynomial that characterizes the left and right lines. 
+
+This two steps are shown in the following image:
+
+![polynomial](output_images/polynomial.jpg)
+
+### 2.6. Radius of Curvature
+
+I converted the pixel location of the lines to the real world and fitted a new polynomial. I used the coefficients of the polynomial to calculate the radius of curvature of the lines.
+
+| Description         | Equation                                                     |
+| ------------------- | ------------------------------------------------------------ |
+| Radius of Curvature | <img src="https://render.githubusercontent.com/render/math?math=R_%7B%5Ccurve%7D%3D%5Cfrac%7B(1%2B(2Ay%2BB)%5E2)%5E%7B3%2F2%7D%7D%7B%5Clvert2A%5Crvert%7D%0A"> |
+
+### 2.7. Vehicle Position
+
+To calculate the vehicle position with respect to the center, I first found the pixel that represent the center of the lane. I then subtracted the center of the image, and converted to real word dimensions.
+
+### 2.8. Lane Area Projection
+
+I used the location of the line pixels to generate the lane area. I also added the information about the curvature and vehicle position to the image.
+
+Here is an example of my output:
+
+![projection](output_images/projection.jpg)
+
+## 3. Pipeline Video
+
+Here is a [link to my video result](./project_video_output.mp4).
