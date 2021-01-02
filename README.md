@@ -1,8 +1,6 @@
 # Advanced Lane Finding
 This software pipeline identifies the lane boundaries in a video from a front-facing camera on a car. The algorithm applies computer vision techniques to analyze images: camera calibration, distortion correction, binary thresholding, perspective transformation, and polynomial fitting.
 
-## Overview
-
 The steps of this project are the following:
 
 * Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
@@ -16,7 +14,7 @@ The steps of this project are the following:
 
 ## Camera Calibration
 
-The code of this step is contained in the second and third cell of the IPython notebook.
+This section is contained in cell #2 and #3 of the **Jupyter Notebook**: `advanced_lane_finding.ipynb`.
 
 I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
 
@@ -30,6 +28,8 @@ I saved the camera calibration and distortion coefficients in a pickle file loca
 
 ### Distortion Correction
 
+This section is contained in cell #4 of the **Jupyter Notebook**: `advanced_lane_finding.ipynb`.
+
 Here is an example of distortion correction in one of the test images. 
 
 I start by reading the camera calibration and distortion coefficients from a pickle file. I then applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result:
@@ -38,6 +38,8 @@ I start by reading the camera calibration and distortion coefficients from a pic
 
 ### Thresholding
 
+This section is contained in cell #5 of the **Jupyter Notebook**: `advanced_lane_finding.ipynb`.
+
 The next step in the pipeline is to generate a thresholded binary image. This image provides a clear visualization of the lane boundaries.
 
 I used a combination of color and gradient thresholds to generate a binary image. Here is an example of my output for this step:
@@ -45,6 +47,8 @@ I used a combination of color and gradient thresholds to generate a binary image
 ![Binary Thresholding](./output_images/binary.jpg)
 
 ### Perspective Transform
+
+This section is contained in cell #8 of the **Jupyter Notebook**: `advanced_lane_finding.ipynb`.
 
 The next step in the pipeline is to transform the perspective of the image as seen from above. I defined source points and destination points to calculate the matrices that would change the perspective.
 
@@ -71,11 +75,13 @@ dst = np.array([[offset, img.shape[0]],
 
 I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
 
-![perspective](output_images/perspective.jpg)
+![perspective](output_images/perspective.jpg)I saved the perspective transformation matrices in a pickle file located in "./pers_pickle.p".
 
 ### Lane Boundaries Identification
 
-I used a sliding windows algorithm to determine the pixels corresponding to the left and right lane lines. I first took the histogram of the bottom half of the image to find the starting point of the left and right lines. Then I defined windows around the starting point to search for other pixels corresponding to the line. 
+This section is contained in cell #10 of the **Jupyter Notebook**: `advanced_lane_finding.ipynb`.
+
+I used a sliding windows algorithm to determine the pixels corresponding to the left and right lane lines. I first took the histogram of the bottom half of the image to find the starting point of the left and right lines. Then I defined windows around the starting point to search for other pixels corresponding to the line.
 
 ### Polynomial Fitting
 
@@ -87,7 +93,7 @@ This two steps are shown in the following image:
 
 ### Radius of Curvature
 
-This section is contained in cell #19 of the **Jupyter Notebook**: `advanced_lane_finding.ipynb`.
+This section is contained in cell #13 of the **Jupyter Notebook**: `advanced_lane_finding.ipynb`.
 
 In the previous section, I identified which pixels belong to the left and right lines (shown in red and blue, respectively). We can calculate the radius of curvature of the polynomial fit by applying the following equation:
 
@@ -122,11 +128,39 @@ I then evaluate the formula at the bottom of the image because that is the close
 
 ### Vehicle Position
 
-To calculate the vehicle position with respect to the center, I first found the pixel that represent the center of the lane. I then subtracted the center of the image, and converted to real word dimensions.
+This section is contained in cell #13 of the **Jupyter Notebook**: `advanced_lane_finding.ipynb`.
+
+To calculate the vehicle position with respect to the center, I first found the pixel that represents the center of the lane.
+
+```python
+    # Determine the dimension of the image
+    y_max = img_size[0]
+    x_max = img_size[1]
+    
+    # Define conversions in x and y from pixels space to meters
+    xm_per_pix = 3.7/700 # meters per pixel in x dimension
+    
+    # Fit a second order polynomial to pixel positions in each lane lines
+    left_fit  = np.polyfit(ploty, leftx, 2)
+    right_fit = np.polyfit(ploty, rightx, 2)
+    
+    leftx_pos  = left_fit[0]*y_max**2 + left_fit[1]*y_max + left_fit[2]
+    rightx_pos = right_fit[0]*y_max**2 + right_fit[1]*y_max + right_fit[2]
+    
+    lanex_center = (leftx_pos + rightx_pos)//2
+```
+
+I then subtracted the center of the image, and converted to real word dimensions.
+
+```python
+    result = ((x_max // 2) - lanex_center) * xm_per_pix
+```
 
 ### Lane Area Projection
 
-I used the location of the line pixels to generate the lane area. I also added the information about the curvature and vehicle position to the image.
+This section is contained in cell #13 of the **Jupyter Notebook**: `advanced_lane_finding.ipynb`.
+
+I used the location of the line pixels to generate the lane area. I also added the information about the curvature and vehicle position to the image. These steps are contained in the function `project_measurements`.
 
 Here is an example of my output:
 
@@ -135,3 +169,11 @@ Here is an example of my output:
 ## Video Output
 
 Here is a [link to my video result](./project_video_output.mp4).
+
+## Discussion
+
+These are some of the issues I faced in my implementation of the project.
+
+The pipeline performs well in the project video, however it fails to identify the lane in the challenge videos. This happens because of the thresholding step in the pipeline. The challenge is to develop a robust method to generate binary images that is unaffected by different lighting conditions, pavement color and shadows. 
+
+My pipeline will likely fail to identify lanes when we have another vehicle in front of the vehicle. In the project, we did not considered this scenario in our design.
